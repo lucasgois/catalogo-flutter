@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:catalogo_flutter/screens/produtos/produtos_controller.dart';
 import 'package:flutter/material.dart';
 
@@ -14,125 +16,171 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
   final double _tamanhoFloatingButton = 80;
 
   String _titulo = '';
-  int _aba = 0;
+  Tela _tela = Tela.catalogoProdutos;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey,
       appBar: AppBar(title: Text(_titulo)),
-      body: Stack(
-        children: [
-          _construir(),
-          Column(
+      body: _construir(),
+      bottomNavigationBar: barra(),
+    );
+  }
+
+  Widget barra() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _fecharVenda(),
+        Container(
+          padding: const EdgeInsets.only(top: 8),
+          color: Colors.blue,
+          child: Row(
             children: [
-              Expanded(child: Container()),
               Expanded(
-                flex: 0,
-                child: Padding(
-                  padding: const EdgeInsets.all(15.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: _tamanhoFloatingButton,
-                        height: _tamanhoFloatingButton,
-                        child: FloatingActionButton(
-                          heroTag: 'produtos',
-                          onPressed: () => _trocarAba(0),
-                          child: Icon(
-                            Icons.list,
-                            size: _tamanhoFloatingButton * 0.666,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      SizedBox(
-                        width: _tamanhoFloatingButton,
-                        height: _tamanhoFloatingButton,
-                        child: FloatingActionButton(
-                          heroTag: 'pedido',
-                          onPressed: () => _trocarAba(1),
-                          child: Icon(
-                            Icons.shopping_cart,
-                            size: _tamanhoFloatingButton * 0.666,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      SizedBox(
-                        width: _tamanhoFloatingButton,
-                        height: _tamanhoFloatingButton,
-                        child: FloatingActionButton(
-                          heroTag: 'pedidos',
-                          onPressed: () => _trocarAba(2),
-                          child: Icon(
-                            Icons.receipt,
-                            size: _tamanhoFloatingButton * 0.666,
-                          ),
-                        ),
-                      ),
-                    ],
+                child: Material(
+                  color: _tela == Tela.catalogoProdutos ? Colors.white : Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _trocarTela(Tela.catalogoProdutos),
+                    child: Icon(
+                      Icons.list,
+                      size: _tamanhoFloatingButton * 0.666,
+                      color: _tela == Tela.catalogoProdutos ? Colors.blue : Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Material(
+                  color: _tela == Tela.orcamento ? Colors.white : Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _trocarTela(Tela.orcamento),
+                    child: Icon(
+                      Icons.shopping_cart,
+                      size: _tamanhoFloatingButton * 0.666,
+                      color: _tela == Tela.orcamento ? Colors.blue : Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Material(
+                  color: _tela == Tela.listaOrcamentos ? Colors.white : Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _trocarTela(Tela.listaOrcamentos),
+                    child: Icon(
+                      Icons.receipt,
+                      size: _tamanhoFloatingButton * 0.666,
+                      color: _tela == Tela.listaOrcamentos ? Colors.blue : Colors.white,
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-          _fecharVenda(),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _construir() {
-    if (_aba == 0) {
-      return _abaProdutos();
-    } else if (_aba == 1) {
-      return _abaPedido();
-    } else if (_aba == 2) {
-      return _abaPedidos();
+    log('_tela: $_tela');
+
+    if (_tela == Tela.catalogoProdutos) {
+      return FutureBuilder(
+        future: _controller.carregarItens(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return _abaCatalogoProdutos();
+          } else {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 10,
+              ),
+            );
+          }
+        },
+      );
+    } else if (_tela == Tela.orcamento) {
+      return _abaOrcamento();
+    } else if (_tela == Tela.listaOrcamentos) {
+      return _abaListaOrcamentos();
     } else {
-      throw 'aba invalida $_aba';
+      throw 'aba invalida $_tela';
     }
   }
 
-  Widget _abaProdutos() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: ListView.separated(
-        itemCount: _controller.produtos.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          return Material(
-            elevation: 5,
-            child: ListTile(
-              title: Text(_controller.produtos[index]['descricao']),
-              subtitle: Text('R\$ ${_controller.produtos[index]['valor']}'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+  Widget _abaCatalogoProdutos() {
+    return ListView.separated(
+      shrinkWrap: true,
+      padding: const EdgeInsets.all(8),
+      itemCount: _controller.produtos.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        return Material(
+          elevation: 5,
+          child: ListTile(
+            title: Container(
+              padding: const EdgeInsets.all(8),
+              height: 120,
+              child: Row(
                 children: [
-                  Text('${_controller.produtos[index]['quantidade'] ?? ''}'),
-                  IconButton(
-                    onPressed: () {
-                      _controller.itens.insert(0, _controller.produtos[index]);
-                      _controller.produtos[index]['quantidade'] ??= 0;
-
-                      setState(() {
-                        _controller.produtos[index]['quantidade']++;
-                      });
-                    },
-                    icon: const Icon(Icons.add),
-                  )
+                  Image.network(
+                    'https://cdn-icons-png.flaticon.com/512/5968/5968282.png',
+                    fit: BoxFit.fill,
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_controller.produtos[index].descricao),
+                      Text(_controller.produtos[index].referencia),
+                      Text('R\$ ${_controller.produtos[index].valor.toStringAsFixed(2)}'),
+                    ],
+                  ),
+                  Expanded(child: Container()),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _controller.addItem(_controller.produtos[index]);
+                          });
+                        },
+                        icon: const Icon(
+                          Icons.add,
+                          color: Colors.green,
+                        ),
+                      ),
+                      Text(_controller.quantidadeItem(_controller.produtos[index].id)),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _controller.removeItem(_controller.produtos[index]);
+                          });
+                        },
+                        icon: const Icon(
+                          Icons.remove,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-          );
-        },
-      ),
+            // subtitle: Center(child: Text(_controller.produtos[index].id)),
+          ),
+        );
+      },
     );
   }
 
-  Widget _abaPedido() {
+  Widget _abaOrcamento() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: ListView.separated(
@@ -142,12 +190,9 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
           return Material(
             elevation: 5,
             child: ListTile(
-              title: Text(_controller.itens[index]['descricao']),
-              subtitle: Text('R\$ ${_controller.itens[index]['valor']}'),
-              trailing: IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.add),
-              ),
+              title: Text(_controller.itens[index].descricao),
+              subtitle: Text('R\$ ${_controller.itens[index].valor}'),
+              trailing: Text('Qtd: ${_controller.itens[index].quantidade.toStringAsFixed(0)}'),
             ),
           );
         },
@@ -155,7 +200,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
     );
   }
 
-  Widget _abaPedidos() {
+  Widget _abaListaOrcamentos() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: ListView.separated(
@@ -175,45 +220,42 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
     );
   }
 
-  void _trocarAba(int aba) {
+  void _trocarTela(Tela tela) {
     String titulo;
 
-    if (aba == 0) {
-      titulo = 'Produtos';
-    } else if (aba == 1) {
-      titulo = 'Pedido';
-    } else if (aba == 2) {
-      titulo = 'Pedidos';
+    if (tela == Tela.catalogoProdutos) {
+      titulo = 'Catálogo de Produtos';
+    } else if (tela == Tela.orcamento) {
+      titulo = 'Orçamento';
+    } else if (tela == Tela.listaOrcamentos) {
+      titulo = 'Lista de Orçamentos';
     } else {
-      throw 'aba invalida $aba';
+      throw 'aba invalida $tela';
     }
 
     setState(() {
       _titulo = titulo;
-      _aba = aba;
+      _tela = tela;
     });
   }
 
   Widget _fecharVenda() {
-    if (_aba == 1 && _controller.itens.isNotEmpty) {
-      return Positioned(
-        right: 18,
-        bottom: 18,
-        child: SizedBox(
-          width: _tamanhoFloatingButton,
-          height: _tamanhoFloatingButton,
-          child: FloatingActionButton(
-            heroTag: 'fechar_pedido',
-            onPressed: () {
-              _controller.pedidos.add(_controller.itens);
-              setState(() {
-                _controller.itens.clear();
-              });
-            },
-            child: Icon(
-              Icons.check,
-              size: _tamanhoFloatingButton * 0.666,
-            ),
+    if (_tela == Tela.orcamento && _controller.itens.isNotEmpty) {
+      return SizedBox(
+        width: _tamanhoFloatingButton,
+        height: _tamanhoFloatingButton,
+        child: FloatingActionButton(
+          heroTag: 'fechar_pedido',
+          backgroundColor: Colors.green,
+          onPressed: () {
+            _controller.pedidos.add(_controller.itens);
+            setState(() {
+              _controller.itens.clear();
+            });
+          },
+          child: Icon(
+            Icons.check,
+            size: _tamanhoFloatingButton * 0.666,
           ),
         ),
       );

@@ -1,92 +1,53 @@
-class ProdutosController {
-  List<Map<String, dynamic>> produtos = [];
-  List<Map<String, dynamic>> itens = [];
-  List<List<Map<String, dynamic>>> pedidos = [];
+import 'dart:developer';
 
-  ProdutosController() {
-    produtos.addAll(
-      [
-        {
-          'descricao': 'Camiseta',
-          'valor': 29.99,
-        },
-        {
-          'descricao': 'Calça jeans',
-          'valor': 79.99,
-        },
-        {
-          'descricao': 'Tênis',
-          'valor': 129.99,
-        },
-        {
-          'descricao': 'Vestido',
-          'valor': 59.99,
-        },
-        {
-          'descricao': 'Sapato social',
-          'valor': 99.99,
-        },
-        {
-          'descricao': 'Jaqueta',
-          'valor': 89.99,
-        },
-        {
-          'descricao': 'Bermuda',
-          'valor': 39.99,
-        },
-        {
-          'descricao': 'Blusa de frio',
-          'valor': 49.99,
-        },
-        {
-          'descricao': 'Sapato esportivo',
-          'valor': 79.99,
-        },
-        {
-          'descricao': 'Saia',
-          'valor': 34.99,
-        },
-        {
-          'descricao': 'Camisa social',
-          'valor': 69.99,
-        },
-        {
-          'descricao': 'Óculos de sol',
-          'valor': 59.99,
-        },
-        {
-          'descricao': 'Shorts',
-          'valor': 29.99,
-        },
-        {
-          'descricao': 'Blazer',
-          'valor': 109.99,
-        },
-        {
-          'descricao': 'Sandália',
-          'valor': 49.99,
-        },
-        {
-          'descricao': 'Macacão',
-          'valor': 79.99,
-        },
-        {
-          'descricao': 'Cinto',
-          'valor': 19.99,
-        },
-        {
-          'descricao': 'Carteira',
-          'valor': 39.99,
-        },
-        {
-          'descricao': 'Chapéu',
-          'valor': 24.99,
-        },
-        {
-          'descricao': 'Pulseira',
-          'valor': 14.99,
-        },
-      ],
-    );
+import 'package:catalogo_flutter/banco/helper.dart';
+import 'package:catalogo_flutter/banco/produto_model.dart';
+
+class ProdutosController {
+  List<ProdutoModel> produtos = [];
+  List<ProdutoModel> itens = [];
+  List<List<ProdutoModel>> pedidos = [];
+
+  ProdutosController();
+
+  Future<bool> carregarItens() async {
+    produtos = await BancoHelper().selectProdutos();
+    log('length ${produtos.length}');
+    return true;
   }
+
+  void addItem(ProdutoModel item) {
+    try {
+      ProdutoModel produto = itens.firstWhere((element) => element.id == item.id);
+      produto.quantidade++;
+    } catch (e) {
+      itens.insert(0, item);
+      item.quantidade++;
+    }
+  }
+
+  void removeItem(ProdutoModel item) {
+    try {
+      ProdutoModel produto = itens.firstWhere((element) => element.id == item.id);
+      produto.quantidade--;
+
+      if (produto.quantidade == 0) {
+        itens.remove(produto);
+      }
+    } catch (_) {}
+  }
+
+  String quantidadeItem(String id) {
+    try {
+      return itens.firstWhere((element) => element.id == id).quantidade.toStringAsFixed(0);
+    } catch (e) {
+      return '';
+    }
+  }
+}
+
+enum Tela {
+  catalogoProdutos,
+  orcamento,
+  listaOrcamentos,
 }
