@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:catalogo_flutter/main.dart';
 import 'package:catalogo_flutter/screens/produtos/produtos_controller.dart';
 import 'package:flutter/material.dart';
 
@@ -238,12 +239,18 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
         itemCount: _controller.listaOrcamentos.length,
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
-          return const Material(
+          return  Material(
             elevation: 5,
-            child: ListTile(
-              title: Text('Pedidos'),
-              subtitle: Text('0.00'),
-              trailing: Icon(Icons.add),
+            child: InkWell(
+              onTap: () {
+                _controller.editarOrcamento(_controller.listaOrcamentos[index]);
+                _trocarTela(Tela.orcamento);
+              },
+              child: ListTile(
+                title: Text('${_controller.listaOrcamentos[index].total}'),
+                subtitle: Text(_controller.listaOrcamentos[index].id),
+                trailing: Text(DateTime.parse(_controller.listaOrcamentos[index].dataCadastro).formatado),
+              ),
             ),
           );
         },
@@ -272,21 +279,24 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
 
   Widget _fecharVenda() {
     if (_tela == Tela.orcamento && _controller.listaItens.isNotEmpty) {
-      return SizedBox(
-        width: _tamanhoFloatingButton,
-        height: _tamanhoFloatingButton,
-        child: FloatingActionButton(
-          heroTag: 'fechar_pedido',
-          backgroundColor: Colors.green,
-          onPressed: () async {
-            await _controller.fecharOrcamento();
-            _controller.listaItens.clear();
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: SizedBox(
+          width: _tamanhoFloatingButton,
+          height: _tamanhoFloatingButton,
+          child: FloatingActionButton(
+            heroTag: 'fechar_pedido',
+            backgroundColor: Colors.green,
+            onPressed: () async {
+              await _controller.fecharOrcamento();
+              _controller.listaItens.clear();
 
-            setState(() {});
-          },
-          child: Icon(
-            Icons.check,
-            size: _tamanhoFloatingButton * 0.666,
+              setState(() {});
+            },
+            child: Icon(
+              Icons.check,
+              size: _tamanhoFloatingButton * 0.666,
+            ),
           ),
         ),
       );

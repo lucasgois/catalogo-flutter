@@ -1,3 +1,6 @@
+import 'dart:developer';
+import 'dart:io';
+
 import 'package:catalogo_flutter/banco/itens_orcamento.dart';
 import 'package:catalogo_flutter/banco/orcamento_model.dart';
 import 'package:catalogo_flutter/banco/produto_model.dart';
@@ -18,18 +21,39 @@ class BancoHelper {
     }
   }
 
+  static Future<String> getDatabasePath() async {
+    String databasePath;
+    if (Platform.isAndroid) {
+      databasePath = await getDatabasesPath();
+    } else if (Platform.isWindows) {
+      databasePath = '';
+    } else {
+      throw Exception();
+    }
+    return join(databasePath, 'banco_de_dados.db');
+  }
+
   static Future<Database> _initDatabase() async {
     sqfliteFfiInit();
 
-    databaseFactory = databaseFactoryFfi;
+    final DatabaseFactory factory = databaseFactoryFfi;
 
-    final databasesPath = await getDatabasesPath();
-    final path = join(databasesPath, 'banco_de_dados.db');
-    return await openDatabase(
+    var path = await getDatabasePath();
+
+    return await factory.openDatabase(
       path,
-      version: 1,
-      onCreate: (Database db, int version) async {
-        await db.execute('''
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (Database db, int version) async {
+          await db.execute('''
+          CREATE TABLE usuarios (
+              id TEXT PRIMARY KEY,
+              usuario TEXT NOT NULL,
+              senha TEXT NOT NULL
+          );
+        ''');
+
+          await db.execute('''
           CREATE TABLE produtos (
             id TEXT PRIMARY KEY,
             descricao TEXT,
@@ -40,15 +64,16 @@ class BancoHelper {
           )
         ''');
 
-        await db.execute('''
+          await db.execute('''
           CREATE TABLE orcamentos (
             id TEXT PRIMARY KEY,
             data_cadastro TEXT,
+            total REAL,
             ativo INTEGER
           )
         ''');
 
-        await db.execute('''
+          await db.execute('''
           CREATE TABLE itens_orcamento (
             id TEXT PRIMARY KEY,
             id_orcamento TEXT,
@@ -61,7 +86,6 @@ class BancoHelper {
           )
         ''');
 
-        try {
           await db.execute('''
                     INSERT INTO produtos (id, descricao, referencia, valor, foto, data_cadastro) VALUES
                     ('68f87d9f-7d2a-4c47-84fb-14379f27d7c1', 'Camiseta', 'REF001', 29.99, 'https://pbs.twimg.com/media/FvDeJoNXwAI2DeL?format=jpg&name=900x900', '2023-06-21T10:30:00Z'),
@@ -85,10 +109,10 @@ class BancoHelper {
                     ('ee91e5da-cd7f-447d-a8b4-8ae6b2f1ae06', 'Lenço', 'REF019', 14.99, 'https://cdn-icons-png.flaticon.com/512/5968/5968282.png', '2023-06-22T01:00:00Z'),
                     ('bc9b9edf-5b36-4492-bdf1-f1652fcf5479', 'Meia', 'REF020', 9.99, 'https://cdn-icons-png.flaticon.com/512/5968/5968282.png', '2023-06-22T01:45:00Z');
                   ''');
-        } catch (e) {
-          print(e);
-        }
-      },
+
+          await db.execute('INSERT INTO usuarios (id, usuario, senha) VALUES (?, ?, ?)', [const Uuid().v4(), 'q', 'q']);
+        },
+      ),
     );
   }
 
@@ -133,7 +157,24 @@ class BancoHelper {
 
     OrcamentoModel orcamentoModel = OrcamentoModel();
     orcamentoModel.id = orcamentos[0]['id'];
-    orcamentoModel.dataCadastro = orcamentos[0]['dataCadastro'];
+    orcamentoModel.dataCadastro = orcamentos[0]['data_cadastro'];
+    orcamentoModel.total = orcamentos[0]['total'];
+    orcamentoModel.ativo = orcamentos[0]['ativo'] == 1;
+    return orcamentoModel;
+  }
+
+  Future<OrcamentoModel?> selectOrcamento(String idOrcamento) async {
+    final db = await database;
+    List<Map<String, dynamic>> orcamentos = await db.query('orcamentos', where: 'id = ?', whereArgs: [idOrcamento], limit: 1);
+
+    if (orcamentos.isEmpty) {
+      return null;
+    }
+
+    OrcamentoModel orcamentoModel = OrcamentoModel();
+    orcamentoModel.id = orcamentos[0]['id'];
+    orcamentoModel.dataCadastro = orcamentos[0]['data_cadastro'];
+    orcamentoModel.total = orcamentos[0]['total'];
     orcamentoModel.ativo = orcamentos[0]['ativo'] == 1;
     return orcamentoModel;
   }
@@ -159,6 +200,8 @@ class BancoHelper {
   Future<List<ItensOrcamentoModel>> selectListaItensOrcamento(String idOrcamento) async {
     final db = await database;
     List<Map<String, dynamic>> itens = await db.query('itens_orcamento', where: 'id_orcamento = ?', whereArgs: [idOrcamento]);
+
+    log('itens $itens');
 
     return itens.map((e) {
       return ItensOrcamentoModel(
@@ -206,6 +249,7 @@ class BancoHelper {
       {
         'id': orcamento.id,
         'data_cadastro': orcamento.dataCadastro,
+        'total': orcamento.total,
         'ativo': orcamento.ativo ? 1 : 0,
       },
     );
@@ -213,8 +257,56 @@ class BancoHelper {
 
   fecharOrcamentoAtivo(String idOrcamento) async {
     final db = await database;
-    await db.update('orcamentos', {
-      'ativo': 0,
-    });
+
+    await db.delete('itens_orcamento', where: 'id_orcamento = ? AND quantidade <= 0', whereArgs: [idOrcamento]);
+
+    List itens = await db.rawQuery('SELECT coalesce(sum(valor * quantidade), 0.0) AS total FROM itens_orcamento WHERE id_orcamento = ?', [idOrcamento]);
+
+    double total = itens.first['total'];
+
+    if (total > 0) {
+      await db.update(
+        'orcamentos',
+        {
+          'ativo': 0,
+          'total': total,
+        },
+        where: 'id = ?',
+        whereArgs: [idOrcamento],
+      );
+    }
+  }
+
+  Future<List<OrcamentoModel>> selectListaOrcamentos() async {
+    final db = await database;
+    List<Map<String, dynamic>> lista = await db.query('orcamentos', columns: [
+      'id',
+      'total',
+      'data_cadastro',
+    ]);
+
+    return lista
+        .map((e) => OrcamentoModel(
+              id: e['id'],
+              dataCadastro: e['data_cadastro'],
+              total: e['total'],
+            ))
+        .toList();
+  }
+
+  Future<bool> login(String usuario, String senha) async {
+    final db = await database;
+
+    List<Map<String, dynamic>> lista = await db.query('usuarios',
+        columns: [
+          'usuario',
+        ],
+        where: 'usuario = ? AND senha = ?',
+        whereArgs: [
+          usuario,
+          senha,
+        ]);
+
+    return lista.isNotEmpty;
   }
 }

@@ -1,9 +1,11 @@
+import 'package:catalogo_flutter/banco/helper.dart';
+
 class LoginController {
   String _usuario = '';
   String _senha = '';
 
-  bool login() {
-    return _usuario == '1' && _senha == '1';
+  Future<bool> login() async {
+    return await BancoHelper().login(_usuario, _senha);
   }
 
   String? deveSerPreenchido(String? value) {

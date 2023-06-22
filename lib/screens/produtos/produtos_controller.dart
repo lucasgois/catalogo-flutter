@@ -8,7 +8,7 @@ import 'package:catalogo_flutter/banco/produto_model.dart';
 class ProdutosController {
   List<ProdutoModel> listaProdutos = [];
   List<ItensOrcamentoModel> listaItens = [];
-  List<List<ProdutoModel>> listaOrcamentos = [];
+  List<OrcamentoModel> listaOrcamentos = [];
 
   OrcamentoModel? _orcamento;
 
@@ -29,18 +29,18 @@ class ProdutosController {
 
   Future<bool> carregarProdutosCatalogo() async {
     listaProdutos = await BancoHelper().selectProdutos();
-    return true;
+    return listaItens.isEmpty;
   }
 
   Future<bool> carregarListaItensOrcamento() async {
     String idOrcamento = (await orcamento()).id;
     listaItens = await BancoHelper().selectListaItensOrcamento(idOrcamento);
-    return true;
+    return listaItens.isEmpty;
   }
 
   Future<bool> carregarListaOrcamentos() async {
-    listaOrcamentos = [];
-    return true;
+    listaOrcamentos = await BancoHelper().selectListaOrcamentos();
+    return listaItens.isEmpty;
   }
 
   Future<void> addItem(ProdutoModel item) async {
@@ -96,6 +96,12 @@ class ProdutosController {
 
     await BancoHelper().fecharOrcamentoAtivo(idOrcamento);
     _orcamento = null;
+  }
+
+  void editarOrcamento(OrcamentoModel orcamentoModel) async {
+    await fecharOrcamento();
+
+    _orcamento = await BancoHelper().selectOrcamento(orcamentoModel.id);
   }
 }
 

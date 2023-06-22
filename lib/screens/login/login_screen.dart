@@ -47,16 +47,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (_formKey.currentState!.validate()) {
                     _formKey.currentState!.save();
 
-                    if (_controller.login()) {
-                      setState(() => _mensagemErroLogin = null);
+                    _controller.login().then((value) {
+                      if (value) {
+                        setState(() => _mensagemErroLogin = null);
 
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) =>  const ProdutosScreen()),
-                      );
-                    } else {
-                      setState(() => _mensagemErroLogin = 'Usuário ou senha inválidos');
-                    }
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const ProdutosScreen()),
+                        );
+                      } else {
+                        setState(() =>
+                            _mensagemErroLogin = 'Usuário ou senha inválidos');
+                      }
+                    });
                   }
                 },
                 child: const Text('Login'),
