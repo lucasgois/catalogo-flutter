@@ -52,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) =>  ProdutosScreen()),
+                        MaterialPageRoute(builder: (context) =>  const ProdutosScreen()),
                       );
                     } else {
                       setState(() => _mensagemErroLogin = 'Usuário ou senha inválidos');

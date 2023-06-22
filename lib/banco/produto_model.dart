@@ -6,6 +6,7 @@ class ProdutoModel {
   String referencia;
   double valor;
   double quantidade;
+  String foto;
   String dataCadastro;
 
   ProdutoModel({
@@ -14,6 +15,7 @@ class ProdutoModel {
     this.referencia = '',
     this.valor = 0.0,
     this.quantidade = 0.0,
+    this.foto = '',
     this.dataCadastro = '',
   });
 
@@ -22,6 +24,7 @@ class ProdutoModel {
     this.referencia,
     this.valor,
     this.quantidade,
+    this.foto,
   )   : id = const Uuid().v4(),
         dataCadastro = DateTime.now().toIso8601String();
 }

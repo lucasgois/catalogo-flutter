@@ -90,7 +90,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
 
     if (_tela == Tela.catalogoProdutos) {
       return FutureBuilder(
-        future: _controller.carregarItens(),
+        future: _controller.carregarProdutosCatalogo(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return _abaCatalogoProdutos();
@@ -105,9 +105,37 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
         },
       );
     } else if (_tela == Tela.orcamento) {
-      return _abaOrcamento();
+      return FutureBuilder(
+        future: _controller.carregarListaItensOrcamento(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return _abaOrcamento();
+          } else {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 10,
+              ),
+            );
+          }
+        },
+      );
     } else if (_tela == Tela.listaOrcamentos) {
-      return _abaListaOrcamentos();
+      return FutureBuilder(
+        future: _controller.carregarListaOrcamentos(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return _abaListaOrcamentos();
+          } else {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 10,
+              ),
+            );
+          }
+        },
+      );
     } else {
       throw 'aba invalida $_tela';
     }
@@ -117,7 +145,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
     return ListView.separated(
       shrinkWrap: true,
       padding: const EdgeInsets.all(8),
-      itemCount: _controller.produtos.length,
+      itemCount: _controller.listaProdutos.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         return Material(
@@ -125,20 +153,23 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
           child: ListTile(
             title: Container(
               padding: const EdgeInsets.all(8),
-              height: 120,
+              height: 150,
               child: Row(
                 children: [
-                  Image.network(
-                    'https://cdn-icons-png.flaticon.com/512/5968/5968282.png',
-                    fit: BoxFit.fill,
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Image.network(
+                      _controller.listaProdutos[index].foto,
+                      fit: BoxFit.fill,
+                    ),
                   ),
                   Column(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_controller.produtos[index].descricao),
-                      Text(_controller.produtos[index].referencia),
-                      Text('R\$ ${_controller.produtos[index].valor.toStringAsFixed(2)}'),
+                      Text(_controller.listaProdutos[index].descricao),
+                      Text(_controller.listaProdutos[index].referencia),
+                      Text('R\$ ${_controller.listaProdutos[index].valor.toStringAsFixed(2)}'),
                     ],
                   ),
                   Expanded(child: Container()),
@@ -148,7 +179,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                       IconButton(
                         onPressed: () {
                           setState(() {
-                            _controller.addItem(_controller.produtos[index]);
+                            _controller.addItem(_controller.listaProdutos[index]);
                           });
                         },
                         icon: const Icon(
@@ -156,11 +187,11 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                           color: Colors.green,
                         ),
                       ),
-                      Text(_controller.quantidadeItem(_controller.produtos[index].id)),
+                      Text(_controller.quantidadeItem(_controller.listaProdutos[index].id)),
                       IconButton(
                         onPressed: () {
                           setState(() {
-                            _controller.removeItem(_controller.produtos[index]);
+                            _controller.removeItem(_controller.listaProdutos[index]);
                           });
                         },
                         icon: const Icon(
@@ -184,15 +215,15 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: ListView.separated(
-        itemCount: _controller.itens.length,
+        itemCount: _controller.listaItens.length,
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           return Material(
             elevation: 5,
             child: ListTile(
-              title: Text(_controller.itens[index].descricao),
-              subtitle: Text('R\$ ${_controller.itens[index].valor}'),
-              trailing: Text('Qtd: ${_controller.itens[index].quantidade.toStringAsFixed(0)}'),
+              title: Text(_controller.listaItens[index].descricao),
+              subtitle: Text('R\$ ${_controller.listaItens[index].valor}'),
+              trailing: Text('Qtd: ${_controller.listaItens[index].quantidade.toStringAsFixed(0)}'),
             ),
           );
         },
@@ -204,7 +235,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: ListView.separated(
-        itemCount: _controller.pedidos.length,
+        itemCount: _controller.listaOrcamentos.length,
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           return const Material(
@@ -240,18 +271,18 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
   }
 
   Widget _fecharVenda() {
-    if (_tela == Tela.orcamento && _controller.itens.isNotEmpty) {
+    if (_tela == Tela.orcamento && _controller.listaItens.isNotEmpty) {
       return SizedBox(
         width: _tamanhoFloatingButton,
         height: _tamanhoFloatingButton,
         child: FloatingActionButton(
           heroTag: 'fechar_pedido',
           backgroundColor: Colors.green,
-          onPressed: () {
-            _controller.pedidos.add(_controller.itens);
-            setState(() {
-              _controller.itens.clear();
-            });
+          onPressed: () async {
+            await _controller.fecharOrcamento();
+            _controller.listaItens.clear();
+
+            setState(() {});
           },
           child: Icon(
             Icons.check,
