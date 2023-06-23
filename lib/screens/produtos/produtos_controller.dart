@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:catalogo_flutter/banco/helper.dart';
 import 'package:catalogo_flutter/banco/itens_orcamento.dart';
 import 'package:catalogo_flutter/banco/orcamento_model.dart';
@@ -91,17 +89,21 @@ class ProdutosController {
     }
   }
 
-  fecharOrcamento() async {
-    String idOrcamento = (await orcamento()).id;
+  fecharOrcamento([String? idOrcamento]) async {
+    idOrcamento ??= (await orcamento()).id;
 
     await BancoHelper().fecharOrcamentoAtivo(idOrcamento);
     _orcamento = null;
   }
 
-  void editarOrcamento(OrcamentoModel orcamentoModel) async {
-    await fecharOrcamento();
-
+  Future<void> editarOrcamento(OrcamentoModel orcamentoModel) async {
+    await fecharOrcamento(orcamentoModel.id);
     _orcamento = await BancoHelper().selectOrcamento(orcamentoModel.id);
+    listaItens = await BancoHelper().selectListaItensOrcamento(orcamentoModel.id);
+  }
+
+  novoOrcamento() {
+    _orcamento = null;
   }
 }
 

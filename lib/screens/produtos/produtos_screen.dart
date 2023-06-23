@@ -23,7 +23,12 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey,
-      appBar: AppBar(title: Text(_titulo)),
+      appBar: AppBar(
+        title: Text(_titulo),
+        actions: [
+          _botaoNovoOrcamento(),
+        ],
+      ),
       body: _construir(),
       bottomNavigationBar: barra(),
     );
@@ -168,7 +173,14 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_controller.listaProdutos[index].descricao),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.4,
+                        child: Text(
+                          _controller.listaProdutos[index].descricao,
+                          softWrap: true,
+                          maxLines: 20,
+                        ),
+                      ),
                       Text(_controller.listaProdutos[index].referencia),
                       Text('R\$ ${_controller.listaProdutos[index].valor.toStringAsFixed(2)}'),
                     ],
@@ -239,15 +251,15 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
         itemCount: _controller.listaOrcamentos.length,
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
-          return  Material(
+          return Material(
             elevation: 5,
             child: InkWell(
-              onTap: () {
-                _controller.editarOrcamento(_controller.listaOrcamentos[index]);
+              onTap: () async {
+                await _controller.editarOrcamento(_controller.listaOrcamentos[index]);
                 _trocarTela(Tela.orcamento);
               },
               child: ListTile(
-                title: Text('${_controller.listaOrcamentos[index].total}'),
+                title: Text('R\$ ${_controller.listaOrcamentos[index].total.toStringAsFixed(2)}'),
                 subtitle: Text(_controller.listaOrcamentos[index].id),
                 trailing: Text(DateTime.parse(_controller.listaOrcamentos[index].dataCadastro).formatado),
               ),
@@ -299,6 +311,20 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
             ),
           ),
         ),
+      );
+    } else {
+      return Container();
+    }
+  }
+
+  _botaoNovoOrcamento() {
+    if (_tela == Tela.orcamento && _controller.listaItens.isNotEmpty) {
+      return IconButton(
+        onPressed: () {
+          _controller.novoOrcamento();
+          setState(() {});
+        },
+        icon: const Icon(Icons.add),
       );
     } else {
       return Container();
